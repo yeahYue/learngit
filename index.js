@@ -20,7 +20,7 @@ app.use((req, res, next) => {
 // ======================
 // 环境变量配置
 // ======================
-const WEBHOOK_SITE_URL = '\thttps://webhook.site/bb73cd76-d8bf-43b5-a2d9-1cb532c07710/webhook'; // 替换为你的实际URL
+const WEBHOOK_SITE_URL = '\thttps://webhook.site/bb73cd76-d8bf-43b5-a2d9-1cb532c07710'; // 替换为你的实际URL
 const GITHUB_SECRET = process.env.GITHUB_WEBHOOK_SECRET || ''; // 可选：GitHub签名验证
 
 // ======================
