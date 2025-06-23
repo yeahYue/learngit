@@ -1,7 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const bodyParser = require('body-parser');
-const axios = require('axios');
+const os = require('os');
 
 const app = express();
 const PORT = 3000;
@@ -20,7 +20,6 @@ app.use((req, res, next) => {
 // ======================
 // 环境变量配置
 // ======================
-const WEBHOOK_SITE_URL = 'https://free-turkeys-retire.loca.lt'; // 替换为你的实际URL
 const GITHUB_SECRET = process.env.GITHUB_WEBHOOK_SECRET || ''; // 可选：GitHub签名验证
 
 // ======================
@@ -34,7 +33,7 @@ app.post('/github-webhook', async (req, res) => {
             return res.status(400).json({ error: 'Missing GitHub event header' });
         }
 
-        // 2. 验证签名（如果配置了secret）
+        // 2. 签名校验（可选）
         if (GITHUB_SECRET) {
             const signature = req.headers['x-hub-signature-256'];
             const hmac = require('crypto')
@@ -50,16 +49,13 @@ app.post('/github-webhook', async (req, res) => {
 
         // 3. 构建结构化数据
         const structuredData = buildStructuredPayload(req);
-        console.log('📦 生成的结构化数据:', JSON.stringify(structuredData, null, 2));
+        console.log('📦 生成的结构化数据:');
+        console.log(JSON.stringify(structuredData, null, 2));
 
-        // 4. 转发到webhook.site
-        const forwardResult = await forwardToWebhookSite(structuredData);
-        console.log(`✅ 转发成功 (状态码: ${forwardResult.status})`);
-
-        // 5. 响应GitHub
+        // 4. 响应GitHub
         res.status(200).json({
             success: true,
-            forwarded: forwardResult.status === 200
+            received: true
         });
 
     } catch (error) {
@@ -97,7 +93,7 @@ function buildStructuredPayload(req) {
             current_project: payload.repository?.name || "unknown",
             environment: {
                 node_version: process.version,
-                hostname: require('os').hostname()
+                hostname: os.hostname()
             }
         },
 
@@ -126,34 +122,13 @@ function buildStructuredPayload(req) {
     };
 }
 
-async function forwardToWebhookSite(data) {
-    try {
-        const response = await axios.post(WEBHOOK_SITE_URL, data, {
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Forwarded-By': 'GitHub-Webhook-Processor'
-            },
-            timeout: 10000 // 10秒超时
-        });
-        return response;
-    } catch (error) {
-        console.error('🚨 转发到webhook.site失败:', {
-            error: error.message,
-            response: error.response?.data,
-            config: error.config
-        });
-        throw error;
-    }
-}
-
 // ======================
 // 启动服务器
 // ======================
 app.listen(PORT, () => {
     console.log(`🚀 服务器已启动: http://localhost:${PORT}`);
-    console.log(`🔌 Webhook端点: http://localhost:${PORT}/github-webhook`);
-    console.log(`📤 转发目标: ${WEBHOOK_SITE_URL}`);
+    console.log(`🔌 Webhook 端点: http://localhost:${PORT}/github-webhook`);
     if (!GITHUB_SECRET) {
-        console.warn('⚠️ 未配置GITHUB_WEBHOOK_SECRET，签名验证已禁用');
+        console.warn('⚠️ 未配置 GITHUB_WEBHOOK_SECRET，签名验证已禁用');
     }
 });
