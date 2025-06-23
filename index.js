@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const os = require('os');
 
 const app = express();
-const PORT = 3000;
+const PORT = 5000;
 
 // ======================
 // 中间件配置
